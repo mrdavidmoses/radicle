@@ -42,6 +42,7 @@ import           Servant.Swagger
 import qualified Paths_radicle as Radicle
 import qualified Radicle.Internal.Annotation as Ann
 import           Radicle.Internal.Core
+import           Radicle.Internal.Json
 import           Radicle.Internal.Parse
 import           Radicle.Internal.Pretty
 

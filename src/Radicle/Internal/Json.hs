@@ -5,6 +5,7 @@ import           Protolude
 import           Control.Monad.Fail
 import qualified Data.Aeson as A
 import qualified Data.Aeson.Types as A
+import           Data.Bifunctor
 import qualified Data.HashMap.Strict as HashMap
 import qualified Data.Map.Strict as Map
 import qualified Data.Sequence as Seq
@@ -66,16 +67,12 @@ maybeJson = \case
     isStringy (Keyword (Ident i)) = pure i
     isStringy _                   = Nothing
 
-maybeFromJson :: A.Value -> Maybe Value
-maybeFromJson = \case
-  A.Number n -> pure $ Number (toRational n) -- TODO(james): think about untrusted sources.
-  A.String s -> pure $ String s
-  A.Bool b -> pure $ Boolean b
-  A.Array xs -> do
-    ys <- traverse maybeFromJson xs
-    pure $ Vec $ Seq.fromList (JsonVector.toList ys)
-  A.Object a -> do
-    let kvs = HashMap.toList a
-    kvs' <- traverse (\(k,v) -> (String k,) <$> maybeFromJson v) kvs
-    pure $ Dict $ Map.fromList kvs'
-  A.Null -> Nothing
+-- | Converts an `aeson` value to a radicle one.
+fromJson :: A.Value -> Value
+fromJson = \case
+  A.Number n -> Number (toRational n) -- TODO(james): think about untrusted sources.
+  A.String s -> String s
+  A.Bool b -> Boolean b
+  A.Array xs -> Vec $ Seq.fromList (JsonVector.toList (fromJson <$> xs))
+  A.Object kvs -> Dict $ Map.fromList $ bimap String fromJson <$> HashMap.toList kvs
+  A.Null -> Keyword (Ident "nothing")
